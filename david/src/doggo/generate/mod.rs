@@ -31,34 +31,23 @@ pub fn generate(vec: Vec<Field>) {
         }
     };
 
-    let darken = |a, b| {
-        if a > 255-b {
-            a-b
-        } else if a+b <= b {
-            a
-        } else {
-            a-b
-        }
-    };
-
     let darken_rgba = |a: Rgba<u8>| {
         let v = 30;
         Rgba {data: [darken(a.data[0], v), darken(a.data[1], v), darken(a.data[2], v), a.data[3]]}
     };
 
-
     let dif = 50;
     let secondary = Rgba {data: [offset(primary.data[0], dif), offset(primary.data[1], dif), offset(primary.data[2], dif), primary.data[3]]};
 
-    tail(primary, secondary, 21, 7, &mut dyn_rgba);
     front_leg(darken_rgba(primary), darken_rgba(secondary), 6, 13, &mut dyn_rgba, 5); //background
-    back_leg(darken_rgba(primary), darken_rgba(secondary), 18, 13, &mut dyn_rgba, 5); // background
+    back_leg(darken_rgba(primary), darken_rgba(secondary), 17, 13, &mut dyn_rgba, 5); // background
 
-    body(primary, secondary, 6, 8, &mut dyn_rgba);
+    let (tailx, taily) = body(primary, secondary, 5, 8, &mut dyn_rgba);
     front_leg(primary, secondary, 9, 14, &mut dyn_rgba, 5);
-    back_leg(primary, secondary, 21, 14, &mut dyn_rgba, 5);
+    back_leg(primary, secondary, 20, 14, &mut dyn_rgba, 5);
+    tail(primary, secondary, tailx, taily, &mut dyn_rgba, Mood::Happy);
 
-    head(primary, secondary, 0,0,&mut dyn_rgba);
+    let _ = head(primary, secondary, 0,0,&mut dyn_rgba);
 
     // Save the image to local storage.
     let _ = dyn_rgba.save(&Path::new("test.png"));
@@ -84,19 +73,24 @@ pub fn front_leg(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: 
 }
 
 // Generates the tail of the dog at the given position.
-pub fn tail(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
-
+pub fn tail(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, mood: Mood) {
     let tail_size = 4;
 
-    // Adds tail
+    let offset: i32 =
+    match mood {
+        Mood::Happy => 1,
+        Mood::Sad => -1,
+        _ => 1,
+    };
+
     for i in 0..tail_size {
-        image.put_pixel(x +i, y -i/2, primary);
-        image.put_pixel(x +i +1, y -i/2, secondary);
+        image.put_pixel(x +i, (y as i32 -((i) as i32*offset)) as u32, primary);
+        image.put_pixel(x +i +1, (y as i32 -((i) as i32*offset)) as u32, secondary);
     }
 }
 
 // Generates the body of the dog at the given position.
-pub fn body(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+pub fn body(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) -> (u32, u32) {
 
     // width, height.
     let body_size_front = [5, 6];
@@ -134,17 +128,18 @@ pub fn body(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut 
         }
     }
 
+    (x +body_size_front[0] +body_size_middle[0] +body_size_back[0] -1, y)
 }
 
 // Generates the head of the dog at the given position.
-pub fn head(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
+pub fn head(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) -> (u32, u32) {
 
     let data: [u8; 4] = [0, 0, 0, 255];
     let black = Rgba {data};
 
     // how many pixels is the head.
-    let nose_size = 4;
-    let head_size: u32 = 9;
+    let nose_size = 3;
+    let head_size: u32 = 8;
     let ear_size = 2;
 
     // Adds head
@@ -211,4 +206,34 @@ pub fn head(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut 
     for i in 0..head_size/3 {
         image.put_pixel(x +nose_size/2 +i, y +nose_start_y+nose_size, black);
     }
+
+    (x + head_size/2, y + head_size/2)
+}
+
+// Reduces the value of a u8 with the provided b value.
+fn darken(a: u8, b: u8) -> u8 {
+    if a == 0 { // Nothing to lower
+        a
+    } else if a > 255-b { // If it can be lowered.
+        a-b
+    } else if a > b {
+        a-b
+    } else {
+        0
+    }
+}
+
+#[test]
+fn test_darken() {
+    assert_eq!(darken(255, 200), 55);
+    assert_eq!(darken(55, 55), 0);
+    assert_eq!(darken(255, 255), 0);
+    assert_eq!(darken(100, 110), 0);
+    assert_eq!(darken(0, 200), 0);
+    assert_eq!(darken(0, 50), 0);
+}
+
+pub enum Mood {
+    Happy,
+    Sad,
 }
