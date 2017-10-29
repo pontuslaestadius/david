@@ -6,7 +6,7 @@ use std::path::Path;
 use std::io::prelude::*;
 use self::image::{Rgba, ImageBuffer};
 
-use super::Field;
+use super::{Field, Mood};
 
 pub fn generate(vec: Vec<Field>) {
 
@@ -138,7 +138,7 @@ pub fn head(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut 
     let black = Rgba {data};
 
     // how many pixels is the head.
-    let nose_size = 3;
+    let nose_size = 4;
     let head_size: u32 = 8;
     let ear_size = 2;
 
@@ -179,8 +179,7 @@ pub fn head(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut 
     let nose_start_y = (head_size/2) as u32;
     for i in 0..(nose_size as f32 *1.5) as u32 {
         for j in 0..nose_size {
-            if j == nose_size && i == 0 {continue;}
-            // Put the pixel on the imagebuffer.
+            if (j == nose_size-1 && i == 0) {continue;}
 
             let color = match j == 0 {
                 true => secondary,
@@ -231,9 +230,4 @@ fn test_darken() {
     assert_eq!(darken(100, 110), 0);
     assert_eq!(darken(0, 200), 0);
     assert_eq!(darken(0, 50), 0);
-}
-
-pub enum Mood {
-    Happy,
-    Sad,
 }

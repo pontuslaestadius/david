@@ -1,7 +1,7 @@
 
 extern crate image;
 
-use super::Field;
+use super::{Field, Mood};
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -26,6 +26,7 @@ pub fn str_to_field(str: &str) -> Field {
 
     match field.next().unwrap() {
         "color" => Field::Color(decode_color(field.next().unwrap())),
+        "mood" => decode_mood(field.next().unwrap()),
         _ => Field::None,
     }
 }
@@ -51,4 +52,13 @@ pub fn decode_color(str: &str) -> image::Rgba<u8> {
 
     println!("{:?}", data);
     Rgba {data}
+}
+
+// Decodes a mood to a field.
+pub fn decode_mood(str: &str) -> Field {
+    match str {
+        "happy" => Field::Mood(Mood::Happy),
+        "sad"   => Field::Mood(Mood::Sad),
+        _ => Field::None,
+    }
 }
