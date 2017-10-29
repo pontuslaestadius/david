@@ -31,16 +31,32 @@ pub fn generate(vec: Vec<Field>) {
         }
     };
 
+    let darken = |a, b| {
+        if a > 255-b {
+            a-b
+        } else if a+b <= b {
+            a
+        } else {
+            a-b
+        }
+    };
+
+    let darken_rgba = |a: Rgba<u8>| {
+        let v = 30;
+        Rgba {data: [darken(a.data[0], v), darken(a.data[1], v), darken(a.data[2], v), a.data[3]]}
+    };
+
+
     let dif = 50;
     let secondary = Rgba {data: [offset(primary.data[0], dif), offset(primary.data[1], dif), offset(primary.data[2], dif), primary.data[3]]};
 
-    tail(primary, secondary, 24, 7, &mut dyn_rgba);
-    front_leg(primary, secondary, 7, 13, &mut dyn_rgba, 5); //background
-    back_leg(primary, secondary, 19, 13, &mut dyn_rgba, 5); // background
+    tail(primary, secondary, 21, 7, &mut dyn_rgba);
+    front_leg(darken_rgba(primary), darken_rgba(secondary), 6, 13, &mut dyn_rgba, 5); //background
+    back_leg(darken_rgba(primary), darken_rgba(secondary), 18, 13, &mut dyn_rgba, 5); // background
 
-    body(primary, secondary, 7, 8, &mut dyn_rgba);
-    front_leg(primary, secondary, 10, 14, &mut dyn_rgba, 5);
-    back_leg(primary, secondary, 22, 14, &mut dyn_rgba, 5);
+    body(primary, secondary, 6, 8, &mut dyn_rgba);
+    front_leg(primary, secondary, 9, 14, &mut dyn_rgba, 5);
+    back_leg(primary, secondary, 21, 14, &mut dyn_rgba, 5);
 
     head(primary, secondary, 0,0,&mut dyn_rgba);
 
@@ -52,8 +68,8 @@ pub fn generate(vec: Vec<Field>) {
 pub fn back_leg(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, height: u32) {
     // Adds leg
     for i in 0..height {
-        image.put_pixel(x +i/2, y +i, primary);
-        image.put_pixel(x +i/2 +1, y +i, secondary);
+        image.put_pixel(x +i/3, y +i, primary);
+        image.put_pixel(x +i/3 +1, y +i, secondary);
     }
 }
 
@@ -82,20 +98,39 @@ pub fn tail(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut 
 // Generates the body of the dog at the given position.
 pub fn body(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
 
-    let body_size = [7, 17];
-    let body_size_front = [7, 14];
-    let body_size_middle = [7, 17];
-    let body_size_back = [7, 13];
+    // width, height.
+    let body_size_front = [5, 6];
+    let body_size_middle = [6, 6];
+    let body_size_back = [5, 6];
 
     // Adds body
-    for i in 0..body_size[1] {
-        for j in 0..body_size[0] {
-            if (j == body_size[0]-1 && i > 1 && i != body_size[1]-1) {
-                image.put_pixel(x +i, y +j, secondary);
-            } else {
-                image.put_pixel(x +i, y +j, primary);
-            }
 
+    // Front
+    for i in 0..body_size_front[0] {
+        for j in 0..body_size_front[1] {
+            if i == 0 && j == body_size_front[1]-1 {continue;}
+            image.put_pixel(x +i, y +j, primary);
+        }
+    }
+
+    // Middle
+    for i in 0..body_size_middle[1] {
+        for j in 0..body_size_middle[0] {
+            if j == body_size_middle[0]-1 {
+                image.put_pixel(x +i + body_size_front[0], y +j, secondary);
+
+            } else {
+                image.put_pixel(x +i + body_size_front[0], y +j, primary);
+            }
+        }
+    }
+
+    // Back
+    for i in 0..body_size_back[0] {
+        for j in 0..body_size_back[1] {
+            if (i > body_size_back[0]-2 && j < 2) {continue;}
+
+            image.put_pixel(x +i + body_size_front[0] + body_size_middle[0], y +j, primary);
         }
     }
 
@@ -104,13 +139,12 @@ pub fn body(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut 
 // Generates the head of the dog at the given position.
 pub fn head(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) {
 
-
     let data: [u8; 4] = [0, 0, 0, 255];
     let black = Rgba {data};
 
     // how many pixels is the head.
     let nose_size = 4;
-    let head_size: u32 = 10;
+    let head_size: u32 = 9;
     let ear_size = 2;
 
     // Adds head
