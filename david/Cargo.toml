@@ -1,0 +1,7 @@
+[package]
+name = "david"
+version = "0.1.0"
+authors = ["Pontus Laestadius <pontus.laestadius@gmail.com>"]
+
+[dependencies]
+image = "*"
