@@ -5,7 +5,7 @@ pub mod generate;
 
 pub enum Field {
     None,
-    Color(image::Rgba<u8>),
+    Colour(Colour),
     Mood(Mood),
 }
 
@@ -14,15 +14,19 @@ pub enum Mood {
     Sad,
 }
 
+pub struct Colour {
+    pub colour: image::Rgba<u8>,
+}
+
 pub struct Default {
-    color: Field::Color(),
+    colour: Colour,
     mood: Mood,
 }
 
 impl Default {
     pub fn new() -> Default {
         Default {
-            color: image::Rgba {data: [130, 130, 130, 255]},
+            colour: Colour {colour: image::Rgba {data: [130, 130, 130, 255]}},
             mood: Mood::Happy
         }
     }

@@ -1,12 +1,11 @@
 extern crate image;
 
-use std::fs::File;
 use std::path::Path;
 
-use std::io::prelude::*;
 use self::image::{Rgba, ImageBuffer};
 
 use super::{Field, Mood};
+use self::part::*;
 
 pub fn generate(vec: Vec<Field>) {
 
@@ -15,10 +14,14 @@ pub fn generate(vec: Vec<Field>) {
     // Converts that image to be an imagebuffer with RGBA.
     let mut dyn_rgba = dyn.to_rgba();
 
+    /*
     let primary: Rgba<u8> = match vec.get(0).unwrap() {
-        &Field::Color(value) => value,
+        &Field::Colour(value) => value,
         _ => {println!("none"); Rgba {data: [0,0,0,255]}},
     };
+    */
+
+    let primary: Rgba<u8> = Rgba {data: [0,0,0,255]};
 
 
     let offset = |a , b| {
@@ -47,7 +50,8 @@ pub fn generate(vec: Vec<Field>) {
     back_leg(primary, secondary, 20, 14, &mut dyn_rgba, 5);
     tail(primary, secondary, tailx, taily, &mut dyn_rgba, Mood::Happy);
 
-    let _ = head(primary, secondary, 0,0,&mut dyn_rgba);
+    let head = part::Head::new(primary, secondary);
+    head.paint(&mut dyn_rgba, 0, 0);
 
     // Save the image to local storage.
     let _ = dyn_rgba.save(&Path::new("test.png"));
@@ -122,91 +126,13 @@ pub fn body(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut 
     // Back
     for i in 0..body_size_back[0] {
         for j in 0..body_size_back[1] {
-            if (i > body_size_back[0]-2 && j < 2) {continue;}
+            if i > body_size_back[0]-2 && j < 2 {continue;}
 
             image.put_pixel(x +i + body_size_front[0] + body_size_middle[0], y +j, primary);
         }
     }
 
     (x +body_size_front[0] +body_size_middle[0] +body_size_back[0] -1, y)
-}
-
-// Generates the head of the dog at the given position.
-pub fn head(primary: Rgba<u8>, secondary: Rgba<u8>, x: u32, y: u32, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) -> (u32, u32) {
-
-    let data: [u8; 4] = [0, 0, 0, 255];
-    let black = Rgba {data};
-
-    // how many pixels is the head.
-    let nose_size = 4;
-    let head_size: u32 = 8;
-    let ear_size = 2;
-
-    // Adds head
-    for i in 0..head_size {
-        for j in 0..head_size {
-            // Put the pixel on the imagebuffer.
-            if (i == head_size-1 && j == head_size-1) ||
-                (i == head_size-1 && j == 0) ||
-                (i == 0 && j == head_size-1) {
-                continue;
-            }
-
-            if i == head_size-1 || j == head_size-1 {
-                image.put_pixel(x +i +nose_size/2, y +j + ear_size, secondary);
-            } else {
-                image.put_pixel(x +i +nose_size/2, y +j + ear_size, primary);
-            }
-
-        }
-    }
-
-    // Adds ears
-    for h in 0..2 {
-        for i in 0..ear_size {
-            for j in 0..ear_size {
-                if i == ear_size-1 && j == 0 {continue;}
-                if j == ear_size-1 && i == 0 {
-                    image.put_pixel(x+nose_size/2 + h*(head_size-ear_size*2) +i, y +j, secondary);
-                } else {
-                    image.put_pixel(x+nose_size/2 + h*(head_size-ear_size*2) +i, y +j, primary);
-                }
-            }
-        }
-    }
-
-    // Adds nose.
-    let nose_start_y = (head_size/2) as u32;
-    for i in 0..(nose_size as f32 *1.5) as u32 {
-        for j in 0..nose_size {
-            if (j == nose_size-1 && i == 0) {continue;}
-
-            let color = match j == 0 {
-                true => secondary,
-                false => primary,
-            };
-
-            image.put_pixel(x +i, y +j + nose_start_y, color);
-        }
-    }
-
-    for i in 0..nose_size/2 {
-        for j in 0..(nose_size+1)/2 {
-            // Put the pixel on the imagebuffer.
-            image.put_pixel(x +i, y +j + nose_start_y, black);
-        }
-    }
-
-    // Adds eyes
-    image.put_pixel(x +head_size/3, y +nose_start_y-1, black);
-    image.put_pixel(x +head_size*2/3, y +nose_start_y-1, black);
-
-    // Adds mouth
-    for i in 0..head_size/3 {
-        image.put_pixel(x +nose_size/2 +i, y +nose_start_y+nose_size, black);
-    }
-
-    (x + head_size/2, y + head_size/2)
 }
 
 // Reduces the value of a u8 with the provided b value.
@@ -230,4 +156,115 @@ fn test_darken() {
     assert_eq!(darken(100, 110), 0);
     assert_eq!(darken(0, 200), 0);
     assert_eq!(darken(0, 50), 0);
+}
+
+
+
+pub mod part {
+
+    extern crate image;
+
+    use self::image::{Rgba, ImageBuffer};
+    use super::{Field, Mood};
+
+    pub trait Part {
+        // Paints the part on the canvas.
+        fn paint(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, x: u32, y: u32) {
+
+        }
+    }
+
+    pub struct Head {
+        primary_colour: Rgba<u8>,
+        secondary_colour: Rgba<u8>,
+    }
+
+    impl Part for Head {
+        fn paint(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, x: u32, y: u32) {
+
+            let data: [u8; 4] = [0, 0, 0, 255];
+            let black = Rgba {data};
+
+            // how many pixels is the head.
+            let nose_size = 4;
+            let head_size: u32 = 8;
+            let ear_size = 2;
+
+            // Adds head
+            for i in 0..head_size {
+                for j in 0..head_size {
+                    // Put the pixel on the imagebuffer.
+                    if (i == head_size-1 && j == head_size-1) ||
+                        (i == head_size-1 && j == 0) ||
+                        (i == 0 && j == head_size-1) {
+                        continue;
+                    }
+
+                    if i == head_size-1 || j == head_size-1 {
+                        image.put_pixel(x +i +nose_size/2, y +j + ear_size, self.secondary_colour);
+                    } else {
+                        image.put_pixel(x +i +nose_size/2, y +j + ear_size, self.primary_colour);
+                    }
+
+                }
+            }
+
+            // Adds ears
+            for h in 0..2 {
+                for i in 0..ear_size {
+                    for j in 0..ear_size {
+                        if i == ear_size-1 && j == 0 {continue;}
+                        if j == ear_size-1 && i == 0 {
+                            image.put_pixel(x+nose_size/2 + h*(head_size-ear_size*2) +i, y +j, self.secondary_colour);
+                        } else {
+                            image.put_pixel(x+nose_size/2 + h*(head_size-ear_size*2) +i, y +j, self.primary_colour);
+                        }
+                    }
+                }
+            }
+
+            // Adds nose.
+            let nose_start_y = (head_size/2) as u32;
+            for i in 0..(nose_size as f32 *1.5) as u32 {
+                for j in 0..nose_size {
+                    if j == nose_size-1 && i == 0 {continue;}
+
+                    let colour = match j == 0 {
+                        true => self.secondary_colour,
+                        false => self.primary_colour,
+                    };
+
+                    image.put_pixel(x +i, y +j + nose_start_y, colour);
+                }
+            }
+
+            for i in 0..nose_size/2 {
+                for j in 0..(nose_size+1)/2 {
+                    // Put the pixel on the imagebuffer.
+                    image.put_pixel(x +i, y +j + nose_start_y, black);
+                }
+            }
+
+            // Adds eyes
+            image.put_pixel(x +head_size/3, y +nose_start_y-1, black);
+            image.put_pixel(x +head_size*2/3, y +nose_start_y-1, black);
+
+            // Adds mouth
+            for i in 0..head_size/3 {
+                image.put_pixel(x +nose_size/2 +i, y +nose_start_y+nose_size, black);
+            }
+
+        }
+    }
+
+    impl Head {
+
+        pub fn new(primary_colour: Rgba<u8>, secondary_colour: Rgba<u8>) -> Head {
+            Head {
+                primary_colour,
+                secondary_colour
+            }
+        }
+
+    }
 }

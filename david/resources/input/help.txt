@@ -1,7 +1,7 @@
 // All tags are taken from CSS tags.
 
-color {
-    Description: given a valid color will use that as as the base for the image.
+colour {
+    Description: given a valid colour will use that as as the base for the image.
     Input: 'red', 'green' 'blue', or following RGBA formatting. '[0, 0, 0, 255]' (black).
 }
 

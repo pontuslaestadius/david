@@ -1,7 +1,7 @@
 
 extern crate image;
 
-use super::{Field, Mood};
+use super::{Field, Mood, Colour};
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -25,14 +25,14 @@ pub fn str_to_field(str: &str) -> Field {
     let mut field = str.split(":");
 
     match field.next().unwrap() {
-        "color" => Field::Color(decode_color(field.next().unwrap())),
+        "colour" => decode_colour(field.next().unwrap()),
         "mood" => decode_mood(field.next().unwrap()),
         _ => Field::None,
     }
 }
 
-pub fn decode_color(str: &str) -> image::Rgba<u8> {
-    // If it's a plain color or if it's RGBA
+pub fn decode_colour(str: &str) -> Field {
+    // If it's a plain colour or if it's RGBA
     let mut data: [u8; 4];
     if str.contains("[") { // RGBA
         // TODO
@@ -51,7 +51,7 @@ pub fn decode_color(str: &str) -> image::Rgba<u8> {
     }
 
     println!("{:?}", data);
-    Rgba {data}
+    Field::Colour(Colour {colour: Rgba {data}})
 }
 
 // Decodes a mood to a field.
